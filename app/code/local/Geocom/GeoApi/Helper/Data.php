@@ -1,7 +1,7 @@
 <?php
 
 require_once(Mage::getBaseDir().DS.'includes'.DS.'config.php');
-class Geocom_GeoApi_Helper_Data extends Mage_Core_Helper_Abstract {
+class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
 
     public function changeOrderStatus($orderId, $status, $cajero, $cajaPos) {
         $order = Mage::getModel("sales/order")->loadByIncrementId($orderId);

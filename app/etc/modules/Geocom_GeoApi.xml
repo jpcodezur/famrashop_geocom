@@ -5,6 +5,9 @@
             <active>true</active>
             <codePool>local</codePool>
             <version>0.1.0</version>
+	    <depends>
+                <Cualit_GeoApi/>
+            </depends>
         </Geocom_GeoApi>
     </modules>
 </config>

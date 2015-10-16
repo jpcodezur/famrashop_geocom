@@ -1,6 +1,6 @@
 <?php
-
-class Geocom_GeoApi_IndexController extends Mage_Core_Controller_Front_Action {
+require_once 'Cualit/GeoApi/controllers/IndexController.php';
+class Geocom_GeoApi_IndexController extends Cualit_GeoApi_IndexController {
 
 	public function remainingDispatchOrdersFiltersAction() {
         
