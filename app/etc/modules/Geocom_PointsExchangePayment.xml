@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Geocom_PointsExchangePayment>
+            <active>true</active>
+            <codePool>local</codePool>
+            <depends>
+                <Mage_Payment/>
+                <Pulsestorm_Crossareasession/>
+            </depends>
+        </Geocom_PointsExchangePayment>
+    </modules>
+</config>

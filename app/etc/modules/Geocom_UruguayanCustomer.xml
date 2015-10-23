@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<config>
+  <modules>
+    <Geocom_UruguayanCustomer>
+      <active>true</active>
+      <codePool>local</codePool>
+      <version>0.2.1</version>
+      <depends>
+        <Cualit_UruguayanCustomer />
+      </depends>
+    </Geocom_UruguayanCustomer>
+  </modules>
+</config>

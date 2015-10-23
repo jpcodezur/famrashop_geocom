@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Geocom_PointsExchangePayment>
+            <version>0.1.0</version>
+        </Geocom_PointsExchangePayment>
+    </modules>
+    <default>
+        <payment>
+            <pointsexchangepayment>
+                <model>pointsexchangepayment/pointsExchangePayment</model>
+                <active>1</active>
+                <order_status>pending</order_status>
+                <title>Canje de puntos</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </pointsexchangepayment>
+        </payment>
+    </default>
+    <global>
+        <template>
+            <email>
+                <custom_failed_point_exchange_order_template module="PointsExchangePayment">
+                    <label>PointsExchangePayment custom email</label>
+                    <file>failed_point_exchange_order.html</file>
+                    <type>html</type>
+                </custom_failed_point_exchange_order_template>
+            </email>
+        </template>
+        <blocks>
+            <pointsexchangepayment>
+                <class>Geocom_PointsExchangePayment_Block</class>
+            </pointsexchangepayment>
+        </blocks>
+        <models>
+            <pointsexchangepayment>
+                <class>Geocom_PointsExchangePayment_Model</class>
+            </pointsexchangepayment>
+        </models>
+    </global>
+</config>
