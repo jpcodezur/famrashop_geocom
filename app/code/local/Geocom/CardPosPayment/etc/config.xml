@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Geocom_CardPosPayment>
+            <version>0.1.0</version>
+        </Geocom_CardPosPayment>
+    </modules>
+    <default>
+        <payment>
+            <cardpospayment>
+                <model>cardpospayment/cardPosPayment</model>
+                <active>1</active>
+                <order_status>pending</order_status>
+                <title>Tarjeta POS Inalámbrico</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </cardpospayment>
+        </payment>
+    </default>
+    <global>
+        <models>
+            <cardpospayment>
+                <class>Geocom_CardPosPayment_Model</class>
+            </cardpospayment>
+        </models>
+    </global>
+</config>

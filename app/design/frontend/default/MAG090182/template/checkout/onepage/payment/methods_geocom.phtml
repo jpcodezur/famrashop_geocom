@@ -1,0 +1,132 @@
+<?php
+/**
+ * Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Magento to newer
+ * versions in the future. If you wish to customize Magento for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     base_default
+ * @copyright   Copyright (c) 2014 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+?>
+<?php
+/**
+ * One page checkout payment methods
+ *
+ * @var $this Mage_Checkout_Block_Onepage_Payment_Methods
+ */
+?>
+
+<?php
+/**
+ * get Controller name
+ */
+//$controller = $this->getRequest()->getControllerName();//checkout_onepage
+ 
+/**
+ * get Action name, i.e. the function inside the controller
+ */
+//$action = $this->getRequest()->getActionName();//saveShippingMethod
+ 
+/**
+ * get Router name
+ */
+//$route = $this->getRequest()->getRouteName();//uruguayancustomer
+ 
+/**
+ * get module name
+ */
+//$module = $this->getRequest()->getModuleName();//uruguayancustomer
+
+$methods = $this->getMethods();
+
+$oneMethod = count($methods) <= 1;
+?>
+<?php if (empty($methods)): ?>
+    <dt>
+        <?php echo $this->__('No Payment Methods') ?>
+    </dt>
+<?php else:
+    foreach ($methods as $_method):
+        $_code = $_method->getCode();
+        ?>
+        <dt>
+            <?php if(!$oneaMethod): ?>
+                <input id="p_method_<?php echo $_code ?>" value="<?php echo $_code ?>" type="radio" name="payment[method]" title="<?php echo $this->escapeHtml($_method->getTitle()) ?>" onclick="payment.switchMethod('<?php echo $_code ?>')"<?php if($this->getSelectedMethodCode()==$_code): ?> checked="checked"<?php endif; ?> class="radio" />
+            <?php else: ?>
+                <span class="no-display"><input id="p_method_<?php echo $_code ?>" value="<?php echo $_code ?>" type="radio" name="payment[method]" checked="checked" class="radio" /></span>
+                <?php $oneMethod = $_code; ?>
+            <?php endif; ?>
+            <label for="p_method_<?php echo $_code ?>"><?php echo $this->escapeHtml($this->getMethodTitle($_method)) ?> <?php echo $this->getMethodLabelAfterHtml($_method) ?></label>
+        </dt>
+        <?php if($_code == "cardpospayment"):?>
+        <dd id="dd_cardpospayment" style="display:none;">
+            <ul style="" id="payment_form_cualit_credit_card" class="form-list">
+                <li>
+                    <label class="required" for="cualit_credit_card_credit_card_type"><em>*</em>Tarjeta de Crédito (Marca):</label>
+                    <span class="input-box">
+                        <select style="width: 100px; margin-left: 17px;" value="" name="payment[credit_card_type]" id="cualit_credit_card_credit_card_type" class="required-entry" title="Tipo de tarjeta de crédito" autocomplete="off">
+                            <option selected="" value=""></option>
+                            <option value="DUMMY">Dummy</option>
+                            <option value="VISA">Visa</option>
+                            <option value="MASTER">Master</option>
+                            <option value="OCA">Oca</option>
+                            <option value="CABAL">Cabal</option>
+                        </select>
+                    </span>
+                </li>
+                <li>
+                    <label class="required" for="cualit_credit_card_credit_card_iin"><em>*</em>Primeros 6 dígitos de Tarjeta:</label>
+                    <span class="input-box">
+                        <input type="text" style="width: 100px;" value="" name="payment[credit_card_iin]" id="cualit_credit_card_credit_card_iin" class="input-text required-entry iin-validation validate-digits" title="Primeros 6 dígitos de Tarjeta:" autocomplete="off">
+                    </span>
+                </li>
+            </ul>
+            <div></div>        
+        </dd>
+        <?php endif; ?>
+        <?php if ($html = $this->getPaymentMethodFormHtml($_method)): ?>
+        <dd>
+            <?php echo $html; ?>
+        </dd>
+    <?php endif; ?>
+    <?php endforeach;
+endif;
+?>
+<?php echo $this->getChildChildHtml('additional'); ?>
+<script type="text/javascript">
+    //<![CDATA[
+    <?php echo $this->getChildChildHtml('scripts'); ?>
+    payment.init();
+    <?php if (is_string($oneMethod)): ?>
+    payment.switchMethod('<?php echo $oneMethod ?>');
+    <?php endif; ?>
+    //]]>
+    
+    jQuery(document).ready(function(){
+        jQuery(document).on("click", "input[type=radio]", function(){
+            jQuery("#dd_cardpospayment").hide();
+        });
+
+        jQuery(document).on("click", "#p_method_cardpospayment", function(){
+            jQuery("#dd_cardpospayment").show();
+            jQuery("#dd_cardpospayment").find("select").attr("disabled",false).css("margin-left",'0px');
+            jQuery("#dd_cardpospayment").find("input").attr("disabled",false);
+        });
+    })
+</script>

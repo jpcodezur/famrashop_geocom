@@ -1,6 +1,7 @@
 <?php
 
-require_once(Mage::getBaseDir().DS.'includes'.DS.'config.php');
+require_once(Mage::getBaseDir() . DS . 'includes' . DS . 'config.php');
+
 class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
 
     public function changeOrderStatus($orderId, $status, $cajero, $cajaPos) {
@@ -35,32 +36,40 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
     protected function createInvoice($order) {
         $comment = 'Generado mediante ws de cambio de estado.';
         $invoice = $order->prepareInvoice()
-            ->setTransactionId($order->getId())
-            ->addComment($comment)
-            ->register()
-            ->pay();
+                ->setTransactionId($order->getId())
+                ->addComment($comment)
+                ->register()
+                ->pay();
 
         $transaction_save = Mage::getModel('core/resource_transaction')
-            ->addObject($invoice)
-            ->addObject($invoice->getOrder());
+                ->addObject($invoice)
+                ->addObject($invoice->getOrder());
         $transaction_save->save();
     }
 
     protected function createShipment($order) {
-        $itemQty =  $order->getItemsCollection()->count();
+        $itemQty = $order->getItemsCollection()->count();
         $shipment = Mage::getModel('sales/service_order', $order)->prepareShipment($itemQty);
         $shipment = new Mage_Sales_Model_Order_Shipment_Api();
         $shipmentId = $shipment->create($order->getIncrementId());
     }
 
-    public function buildRemainingDispatchOrderResponseData($local) {
+    public function buildRemainingDispatchOrderResponseData($local, $status = "") {
         //$expireDate = date("F j, Y, H:i", strtotime('+1 hour'));
         $response = array();
+        
+        if($status){
+            $status = array('eq' => $status);
+        }else{
+            $status = array(array('eq' => "pending"),array('eq' => "in_process"));
+        }
 
         $orders = Mage::getModel('sales/order')->getCollection()
-            ->addAttributeToFilter('commerce_local', array('eq'=>$local))
-            //->addAttributeToFilter('updated_at', array('lteq'=>$expireDate))
-            ->addFieldToFilter(array('status', 'status'), array(array('eq' => 'pending'), array('eq' => 'in_process')));
+                ->addAttributeToFilter('farmashop_local', array('eq' => $local))
+                //->addAttributeToFilter('updated_at', array('lteq'=>$expireDate))
+                ->addFieldToFilter(array('status', 'status'), array(array('eq' => 'pending'), array('eq' => 'in_process')))
+                ->addFieldToFilter('status', $status);
+        
         $response['cantidad'] = $orders->getSize();
 
         return $response;
@@ -73,8 +82,8 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
         $expireDate = date('Y-m-d H:i:s', strtotime($formattedTime));
 
         $orders = Mage::getModel('sales/order')->getCollection()
-            ->addAttributeToFilter('updated_at', array('lteq'=>$expireDate))
-            ->addFieldToFilter(array('status', 'status'), array(array('eq' => 'locked')));
+                ->addAttributeToFilter('updated_at', array('lteq' => $expireDate))
+                ->addFieldToFilter(array('status', 'status'), array(array('eq' => 'locked')));
 
         $response['cantidad'] = $orders->getSize();
 
@@ -85,19 +94,83 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
 
         return $response;
     }
-	
-	public function buildOrdersResponseDataFilters($filters) {
-        
+
+    protected function buildDispatchData($order) {
+        $client = array();
+        $client['documento'] = $this->buildPrettyValues($order->getCustomerDocumentNumber());
+        $client['nombre'] = $order->getCustomerName();
+        $client['direccion'] = $order->getShippingAddress()->getCity();
+        $client['direccion'] .= " " . $order->getShippingAddress()->getStreet()[0];
+        $client['direccion'] .= " " . $order->getShippingAddress()->getAddressCorner();
+        $client['direccion'] .= " " . $order->getShippingAddress()->getAddressNumber();
+        $client["afinidad"] = !$order->getCustomerIsGuest();
+        // $client['direccion'] .= " ".$order->getShippingAddress()->getTelephone();
+        $client['telefono'] = $order->getShippingAddress()->getTelephone();
+        $client['tipo_documento'] = $this->buildPrettyDocument($order->getCustomerDocumentType());
+        $client['codigo_pais_documento'] = "UY"; //$order->getShippingAddress()->getCountry();
+        $client['comentario'] = $order->getComment();
+        $client['entrega_programada'] = $this->buildPrettyDate($order);
+        $client['esquina'] = $order->getShippingAddress()->getAddressCorner();
+        return $client;
+    }
+
+    public function buildOrdersResponseDataFilters($filters) {
+
         $orders = Mage::getModel('sales/order')->getCollection()
-            ->addAttributeToFilter('farmashop_local', array('eq'=>$filters->local))
-            ->addAttributeToFilter('created_at', array('gt'=>$filters->fechadesde . " " . $filters->horadesde))
-            ->addAttributeToFilter('created_at', array('lt'=>$filters->fechahasta . " ". $filters->horahasta));
-                
-            /*->addFieldToFilter(array('status', 'status'), array(
-                array('eq' => 'pending'),
-                array('eq' => 'in_process')));*/
+                ->addAttributeToFilter('farmashop_local', array('eq' => $filters->local))
+                ->addAttributeToFilter('created_at', array('gt' => $filters->fechadesde . " " . $filters->horadesde))
+                ->addAttributeToFilter('created_at', array('lt' => $filters->fechahasta . " " . $filters->horahasta));
+
+        /* ->addFieldToFilter(array('status', 'status'), array(
+          array('eq' => 'pending'),
+          array('eq' => 'in_process'))); */
 
         return $this->buildOrdersData($orders);
+    }
+
+    public function buildOrdersResponseData($local, $status = "pending") {
+
+
+        $expireDate = date("Y-m-d H:i:s", strtotime('+1 hour'));
+        $currRange = $this->getCurrentDeliveryRangeAction($local);
+        if (count($currRange) == 0 || !$currRange["from"] || !$currRange["to"]) {
+            return array();
+        }
+        
+        if($status){
+            $status = array('eq' => $status);
+        }else{
+            $status = array(array('eq' => "pending"),array('eq' => "in_process"));
+        }
+
+        $orders = Mage::getModel('sales/order')->getCollection();
+        /*$currRange = array(
+            "from" => "2015-10-28 01:00:00",
+            "to" => "2015-10-28 23:00:00"
+        );*/
+        
+        
+        $orders
+                ->addAttributeToFilter('farmashop_local', array('eq' => $local))
+                ->addFieldToFilter('status', $status)
+        
+                ->addAttributeToFilter('delivery_from', array('lteq'=>date("Y-m-d H:i:s", strtotime('+1 hours'))));
+                //->addAttributeToFilter('delivery_from', array('gteq'=>date("Y-m-d H:i:s", strtotime('+5 hours'))));
+
+        return $this->buildOrdersData($orders);
+    }
+
+    public function buildOrdersResponseDataFiltersQuantity($filters) {
+
+        $orders = Mage::getModel('sales/order')->getCollection()
+                ->addAttributeToFilter('farmashop_local', array('eq' => $filters->local))
+                ->addAttributeToFilter('created_at', array('gt' => $filters->fechadesde . " " . $filters->horadesde))
+                ->addAttributeToFilter('created_at', array('lt' => $filters->fechahasta . " " . $filters->horahasta))
+                ->addFieldToFilter(array('status', 'status'), array(array('eq' => 'pending')));
+
+        $data = $this->buildOrdersData($orders);
+
+        return array("total_pendientes" => count($data));
     }
 
     public function buildOrderResponseData($orderId) {
@@ -167,7 +240,7 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
     protected function buildItems($order) {
         $items = array();
         $rowIndex = 0;
-        foreach($order->getAllItems() as $index=>$orderItem) {
+        foreach ($order->getAllItems() as $index => $orderItem) {
             $item = array();
             $item['nro_linea'] = $index;
             $item['sku'] = $orderItem->getSku();
@@ -182,7 +255,7 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
             $rowIndex = $index;
             $items[] = $item;
         }
-        $timbres = $this->buildTimbreItems($order, $rowIndex+1);
+        $timbres = $this->buildTimbreItems($order, $rowIndex + 1);
         $items = array_merge($items, $timbres);
         return $items;
     }
@@ -193,7 +266,10 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
         foreach ($agreements as $agreementIndex => $agreement) {
             $item = array();
             $item['nro_linea'] = $index;
-            $item['sku'] = '';
+            foreach ($agreement->items as $itemIndex => $itemT) {
+                $item['sku'] = $this->getProductSkuByItemId($order, $itemT->id);
+            }
+            
             $item['descripcion'] = $agreement->descripcion;
             $item['cantidad'] = 1;
             //$item['descuentos'] = $this->buildPromos($orderItem);
@@ -211,9 +287,9 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
     protected function buildPromos($item) {
         $discounts = array();
         $promotions = json_decode($item->getOrder()->getPromotions());
-        if(!is_null($promotions)) {
+        if (!is_null($promotions)) {
             $product_promo = $promotions->{$item->getProductId()};
-            foreach ($product_promo as $promotion){
+            foreach ($product_promo as $promotion) {
                 $discounts[] = array("id_promo" => $promotion->{'@attributes'}->{'promotion-id'}, "descripcion" => $promotion->{'@attributes'}->{'general-name'}, "monto" => $promotion->{'@attributes'}->{'amount'});
             }
         }
@@ -236,7 +312,7 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
 
     protected function buildPrettyPayment($payment) {
         $method = $payment->getMethod();
-        switch($method) {
+        switch ($method) {
             case "cualit_credit_card":
                 $type = $payment->getCreditCardType();
                 return "CREDIT";
@@ -256,23 +332,8 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
         return strtoupper($status);
     }
 
-    protected function buildDispatchData($order) {
-        $client = array();
-        $client['documento'] = $this->buildPrettyValues($order->getCustomerDocumentNumber());
-        $client['nombre'] = $order->getCustomerName();
-        $client['direccion'] = $order->getShippingAddress()->getCity();
-        $client['direccion'] .= " ".$order->getShippingAddress()->getStreet()[0];
-        $client['direccion'] .= " ".$order->getShippingAddress()->getAddressCorner();
-        $client['direccion'] .= " ".$order->getShippingAddress()->getAddressNumber();
-        $client['direccion'] .= " ".$order->getShippingAddress()->getTelephone();
-        $client['telefono'] = $order->getShippingAddress()->getTelephone();
-        $client['tipo_documento'] = $this->buildPrettyDocument($order->getCustomerDocumentType());
-        $client['codigo_pais_documento'] = $order->getShippingAddress()->getCountry();
-        return $client;
-    }
-
     protected function buildPrettyDocument($type) {
-        switch(strtolower($type)) {
+        switch (strtolower($type)) {
             case "ci":
                 return 3;
             case "otro":
@@ -298,10 +359,10 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
         $client['nombre'] = $order->getCustomerName();
         $billingAdd = $order->getBillingAddress();
         $client['direccion'] = $billingAdd->getCity();
-        $client['direccion'] .= " ".$billingAdd->getStreet()[0];
-        $client['direccion'] .= " ".$billingAdd->getAddressCorner();
-        $client['direccion'] .= " ".$billingAdd->getAddressNumber();
-        $client['direccion'] .= " ".$billingAdd->getTelephone();
+        $client['direccion'] .= " " . $billingAdd->getStreet()[0];
+        $client['direccion'] .= " " . $billingAdd->getAddressCorner();
+        $client['direccion'] .= " " . $billingAdd->getAddressNumber();
+        $client['direccion'] .= " " . $billingAdd->getTelephone();
         $client['ciudad'] = $order->getBillingAddress()->getCity();
         return $client;
     }
@@ -315,7 +376,7 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
                 $tempitem['sku'] = $this->getProductSkuByItemId($order, $item->id);
                 $tempitem['cantidad_receta'] = $item->qty;
                 $tempitem['nro_convenio'] = $agreement->type;
-                $tempitem['id_receta'] =  $agreement->number;
+                $tempitem['id_receta'] = $agreement->number;
                 $items[] = $tempitem;
             }
         }
@@ -323,13 +384,12 @@ class Geocom_GeoApi_Helper_Data extends Cualit_GeoApi_Helper_Data {
     }
 
     protected function getProductSkuByItemId($order, $productId) {
-        foreach($order->getAllItems() as $index=>$orderItem) {
+        foreach ($order->getAllItems() as $index => $orderItem) {
             if ($orderItem->getProduct()->getId() == $productId) {
                 return $orderItem->getSku();
             }
         }
         return null;
     }
-
 
 }
