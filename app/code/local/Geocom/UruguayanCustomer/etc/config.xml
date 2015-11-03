@@ -98,11 +98,11 @@
                 
             </geocom_uruguayancustomer_checkout_onepagecontroller>
         </rewrite>-->
-        <!--<helpers>
+        <helpers>
             <uruguayancustomer>
                 <class>Geocom_UruguayanCustomer_Helper</class>
             </uruguayancustomer>
-        </helpers>-->
+        </helpers>
         <models>
             <uruguayancustomer>
                 <class>Cualit_UruguayanCustomer_Model</class>

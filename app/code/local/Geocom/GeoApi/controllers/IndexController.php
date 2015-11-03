@@ -138,6 +138,7 @@ public function remainingDispatchOrdersAction() {
         $username = (string) $this->getRequest()->getPost('username');
         $password = (string) $this->getRequest()->getPost('password');
         $local = (string) $this->getRequest()->getPost('local');
+        $status = (string) $this->getRequest()->getPost('status');
 
         $response = array('status' => "ok", 'data' => '');
 
@@ -163,6 +164,8 @@ public function remainingDispatchOrdersAction() {
                 $filters->horadesde = $horadesde;
                 $filters->horahasta = $horahasta;
                 $filters->local = $local;
+                $filters->status = $status;
+                
                 $response['data'] = Mage::helper('geocom_geoapi')->buildOrdersResponseDataFilters($filters);
             } catch (Exception $e) {
                 $response = array('status' => "error", 'msg' => 'No existe una orden con ese identificador');
