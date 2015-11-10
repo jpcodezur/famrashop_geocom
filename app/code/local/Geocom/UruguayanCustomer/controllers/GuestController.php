@@ -11,9 +11,9 @@ use \Httpful\Http;
  * Date: 9/8/15
  * Time: 5:13 PM
  */
-class Geocom_UruguayanCustomer_GuestController extends Mage_Core_Controller_Front_Action
+class Geocom_UruguayanCustomer_GuestController extends Cualit_UruguayanCustomer_GuestController
 {
-    private $_isCCLogged = null;
+    /*private $_isCCLogged = null;
     private $_isGuestLogged = null;
 
     public function preDispatch()
@@ -185,5 +185,5 @@ class Geocom_UruguayanCustomer_GuestController extends Mage_Core_Controller_Fron
                 return false;
         }
         return true;
-    }
+    }*/
 }

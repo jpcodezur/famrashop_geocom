@@ -26,7 +26,7 @@
         <layout>
             <updates>
                 <uruguayancustomer module="UruguayanCustomer">
-                    <file>uruguayancustomergeocom.xml</file>
+                    <file>uruguayancustomer.xml</file>
                 </uruguayancustomer>
             </updates>
         </layout>
